@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer
 from sqlalchemy.orm import declarative_base, sessionmaker
+import gradio as gr
 
 # Crear conexión y base de datos
 engine = create_engine("sqlite:///recorrido_caballo.db", echo=False)
@@ -35,7 +36,6 @@ class CaballoAjedrez:
         return 0 <= x < self.N and 0 <= y < self.N and self.tablero[x][y] == -1
 
     def resolver(self, x=0, y=0):
-        print(f"Comenzando desde la posición: ({x}, {y})")
         self.tablero[x][y] = 0
         self.recorrido.append((x, y))
         if self._recorrer(x, y, 1):
@@ -58,17 +58,13 @@ class CaballoAjedrez:
                     return True
                 self.tablero[nx][ny] = -1
                 self.recorrido.pop()
-
         return False
 
-    def imprimir_tablero(self):
-        for fila in self.tablero:
-            print(" ".join(f"{celda:2}" for celda in fila))
+    def obtener_tablero(self):
+        return "\n".join([" ".join(f"{celda:2}" for celda in fila) for fila in self.tablero])
 
-    def imprimir_recorrido_columna(self):
-        print("Recorrido en columna:")
-        for pos in self.recorrido:
-            print(pos)
+    def obtener_recorrido(self):
+        return "\n".join([f"Paso {i}: {pos}" for i, pos in enumerate(self.recorrido)])
 
     def guardar_en_base_de_datos(self):
         session = Session()
@@ -77,5 +73,38 @@ class CaballoAjedrez:
             session.add(movimiento)
         session.commit()
         session.close()
-        print("Recorrido guardado en la base de datos.")
-        
+
+# --- Función para Gradio ---
+def resolver_recorrido(tamaño, fila_inicial, columna_inicial):
+    try:
+        tamaño = int(tamaño)
+        fila_inicial = int(fila_inicial)
+        columna_inicial = int(columna_inicial)
+
+        if tamaño < 1 or fila_inicial < 0 or columna_inicial < 0 or fila_inicial >= tamaño or columna_inicial >= tamaño:
+            return "Error: Los valores deben ser válidos y dentro del tamaño del tablero."
+
+        caballo = CaballoAjedrez(tamaño)
+        if caballo.resolver(fila_inicial, columna_inicial):
+            caballo.guardar_en_base_de_datos()
+            return f"Tablero:\n{caballo.obtener_tablero()}\n\nRecorrido:\n{caballo.obtener_recorrido()}"
+        else:
+            return "No se encontró una solución para el recorrido del caballo con los parámetros dados."
+    except ValueError:
+        return "Error: Por favor, ingrese valores numéricos válidos."
+
+# --- Interfaz de Gradio ---
+interfaz = gr.Interface(
+    fn=resolver_recorrido,
+    inputs=[
+        gr.Textbox(label="Tamaño del tablero (N x N)", value="8"),
+        gr.Textbox(label="Fila inicial (0 a N-1)", value="0"),
+        gr.Textbox(label="Columna inicial (0 a N-1)", value="0")
+    ],
+    outputs="text",
+    title="Recorrido del Caballo",
+    description="Ingresa el tamaño del tablero y la posición inicial del caballo para resolver el problema del recorrido. El resultado mostrará el tablero y el recorrido paso a paso."
+)
+
+# Lanzar la interfaz
+interfaz.launch()
