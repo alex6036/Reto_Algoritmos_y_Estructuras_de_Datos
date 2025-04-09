@@ -1,3 +1,23 @@
+from sqlalchemy import create_engine, Column, Integer
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+# Crear conexión y base
+engine = create_engine("sqlite:///recorrido_caballo.db", echo=False)
+Base = declarative_base()
+Session = sessionmaker(bind=engine)
+
+class MovimientoCaballo(Base):
+    __tablename__ = 'movimientos'
+    id = Column(Integer, primary_key=True)
+    paso = Column(Integer)
+    fila = Column(Integer)
+    columna = Column(Integer)
+
+    def __repr__(self):
+        return f"Paso {self.paso}: ({self.fila}, {self.columna})"
+
+Base.metadata.create_all(engine)
+
 class CaballoAjedrez:
     def __init__(self, tamaño=8):
         self.N = tamaño
@@ -46,6 +66,16 @@ class CaballoAjedrez:
         print("Recorrido en columna:")
         for pos in self.recorrido:
             print(pos)
+            
+    def guardar_en_base_de_datos(self):
+        session = Session()
+        for paso, (fila, columna) in enumerate(self.recorrido):
+            movimiento = MovimientoCaballo(paso=paso, fila=fila, columna=columna)
+            session.add(movimiento)
+        session.commit()
+        session.close()
+        print("Recorrido guardado en la base de datos.")
+
 
 
 caballo = CaballoAjedrez()
