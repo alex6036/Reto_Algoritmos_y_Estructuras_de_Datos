@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine, Column, Integer
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Crear conexión y base
+# Crear conexión y base de datos
 engine = create_engine("sqlite:///recorrido_caballo.db", echo=False)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 
+# --- Definir la tabla ---
 class MovimientoCaballo(Base):
     __tablename__ = 'movimientos'
     id = Column(Integer, primary_key=True)
@@ -16,8 +17,10 @@ class MovimientoCaballo(Base):
     def __repr__(self):
         return f"Paso {self.paso}: ({self.fila}, {self.columna})"
 
+# Crear la tabla en la base de datos
 Base.metadata.create_all(engine)
 
+# --- Clase CaballoAjedrez ---
 class CaballoAjedrez:
     def __init__(self, tamaño=8):
         self.N = tamaño
@@ -31,7 +34,7 @@ class CaballoAjedrez:
     def es_valido(self, x, y):
         return 0 <= x < self.N and 0 <= y < self.N and self.tablero[x][y] == -1
 
-    def resolver(self, x=0, y=0):  # posición por defecto: (0, 0)
+    def resolver(self, x=0, y=0):
         print(f"Comenzando desde la posición: ({x}, {y})")
         self.tablero[x][y] = 0
         self.recorrido.append((x, y))
@@ -61,12 +64,12 @@ class CaballoAjedrez:
     def imprimir_tablero(self):
         for fila in self.tablero:
             print(" ".join(f"{celda:2}" for celda in fila))
-    
+
     def imprimir_recorrido_columna(self):
         print("Recorrido en columna:")
         for pos in self.recorrido:
             print(pos)
-            
+
     def guardar_en_base_de_datos(self):
         session = Session()
         for paso, (fila, columna) in enumerate(self.recorrido):
@@ -75,16 +78,4 @@ class CaballoAjedrez:
         session.commit()
         session.close()
         print("Recorrido guardado en la base de datos.")
-
-
-
-caballo = CaballoAjedrez()
-
-# Puedes cambiar aquí la posición inicial si quieres, por ejemplo (3, 3)
-if caballo.resolver(0, 0):
-    caballo.imprimir_tablero()
-    print()
-    caballo.imprimir_recorrido_columna()
-else:
-    print("No se encontró solución.")
-
+        
