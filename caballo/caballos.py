@@ -1,0 +1,60 @@
+class CaballoAjedrez:
+    def __init__(self, tamaño=8):
+        self.N = tamaño
+        self.tablero = [[-1 for _ in range(self.N)] for _ in range(self.N)]
+        self.movimientos = [
+            (2, 1), (1, 2), (-1, 2), (-2, 1),
+            (-2, -1), (-1, -2), (1, -2), (2, -1)
+        ]
+        self.recorrido = []
+
+    def es_valido(self, x, y):
+        return 0 <= x < self.N and 0 <= y < self.N and self.tablero[x][y] == -1
+
+    def resolver(self, x=0, y=0):  # posición por defecto: (0, 0)
+        print(f"Comenzando desde la posición: ({x}, {y})")
+        self.tablero[x][y] = 0
+        self.recorrido.append((x, y))
+        if self._recorrer(x, y, 1):
+            return True
+        else:
+            self.tablero[x][y] = -1
+            self.recorrido.pop()
+            return False
+
+    def _recorrer(self, x, y, paso):
+        if paso == self.N * self.N:
+            return True
+
+        for dx, dy in self.movimientos:
+            nx, ny = x + dx, y + dy
+            if self.es_valido(nx, ny):
+                self.tablero[nx][ny] = paso
+                self.recorrido.append((nx, ny))
+                if self._recorrer(nx, ny, paso + 1):
+                    return True
+                self.tablero[nx][ny] = -1
+                self.recorrido.pop()
+
+        return False
+
+    def imprimir_tablero(self):
+        for fila in self.tablero:
+            print(" ".join(f"{celda:2}" for celda in fila))
+    
+    def imprimir_recorrido_columna(self):
+        print("Recorrido en columna:")
+        for pos in self.recorrido:
+            print(pos)
+
+
+caballo = CaballoAjedrez()
+
+# Puedes cambiar aquí la posición inicial si quieres, por ejemplo (3, 3)
+if caballo.resolver(0, 0):
+    caballo.imprimir_tablero()
+    print()
+    caballo.imprimir_recorrido_columna()
+else:
+    print("No se encontró solución.")
+
